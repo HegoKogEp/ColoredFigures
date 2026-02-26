@@ -1,7 +1,5 @@
-﻿using ColoredFigures.Models.CircleCreators;
+﻿using ColoredFigures.Models.Factories;
 using ColoredFigures.Models.Shapes;
-using ColoredFigures.Models.SquareCreators;
-using ColoredFigures.Models.TriangleCreators;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -9,25 +7,23 @@ namespace ColoredFigures
 {
     public partial class MainWindow : Window
     {
-        private ICircleCreator? _circleCreator;
-        private ISquareCreator? _squareCreator;
-        private ITriangleCreator? _triangleCreator;
+        private IFigureFactory? _figureFactory;
         private List<Figure> _figureHistory = new List<Figure>();
 
         public MainWindow()
         {
             InitializeComponent();
             colorComboBox.SelectedIndex = 0;
-            UpdateCreators();
+            UpdateFactory();
         }
 
         private void ColorComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            UpdateCreators();
+            UpdateFactory();
             RedrawAllFiguresWithNewColor();
         }
 
-        private void UpdateCreators()
+        private void UpdateFactory()
         {
             var selectedItem = colorComboBox.SelectedItem as ComboBoxItem;
             if (selectedItem == null) return;
@@ -37,31 +33,23 @@ namespace ColoredFigures
             switch (color)
             {
                 case "Red":
-                    _circleCreator = new RedCircleCreator();
-                    _squareCreator = new RedSquareCreator();
-                    _triangleCreator = new RedTriangleCreator();
+                    _figureFactory = new RedFigureFactory();
                     break;
                 case "Blue":
-                    _circleCreator = new BlueCircleCreator();
-                    _squareCreator = new BlueSquareCreator();
-                    _triangleCreator = new BlueTriangleCreator();
+                    _figureFactory = new BlueFigureFactory();
                     break;
                 case "Green":
-                    _circleCreator = new GreenCircleCreator();
-                    _squareCreator = new GreenSquareCreator();
-                    _triangleCreator = new GreenTriangleCreator();
+                    _figureFactory = new GreenFigureFactory();
                     break;
                 default:
-                    _circleCreator = null;
-                    _squareCreator = null;
-                    _triangleCreator = null;
+                    _figureFactory = null;
                     break;
             }
         }
 
         private void RedrawAllFiguresWithNewColor()
         {
-            if (_circleCreator == null || _squareCreator == null || _triangleCreator == null)
+            if (_figureFactory == null)
             {
                 figuresPanel.Children.Clear();
                 return;
@@ -73,21 +61,21 @@ namespace ColoredFigures
 
             List<Figure> temp = new List<Figure>();
 
-            foreach (var oldFigure in _figureHistory)
+            foreach (var _ in _figureHistory)
             {
                 Figure newFigure = null;
 
-                if (oldFigure is Circle)
+                if (_ is Circle)
                 {
-                    newFigure = _circleCreator.CreateCircle();
+                    newFigure = _figureFactory.CreateCircle();
                 }
-                else if (oldFigure is Square)
+                else if (_ is Square)
                 {
-                    newFigure = _squareCreator.CreateSquare();
+                    newFigure = _figureFactory.CreateSquare();
                 }
-                else if (oldFigure is Triangle)
+                else if (_ is Triangle)
                 {
-                    newFigure = _triangleCreator.CreateTriangle();
+                    newFigure = _figureFactory.CreateTriangle();
                 }
 
                 if (newFigure != null)
@@ -102,27 +90,27 @@ namespace ColoredFigures
 
         private void AddCircleButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_circleCreator == null) return;
+            if (_figureFactory == null) return;
 
-            var circle = _circleCreator.CreateCircle();
+            var circle = _figureFactory.CreateCircle();
             _figureHistory.Add(circle);
             figuresPanel.Children.Add(circle.CreateUIElement());
         }
 
         private void AddSquareButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_squareCreator == null) return;
+            if (_figureFactory == null) return;
 
-            var square = _squareCreator.CreateSquare();
+            var square = _figureFactory.CreateSquare();
             _figureHistory.Add(square);
             figuresPanel.Children.Add(square.CreateUIElement());
         }
 
         private void AddTriangleButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_triangleCreator == null) return;
+            if (_figureFactory == null) return;
 
-            var triangle = _triangleCreator.CreateTriangle();
+            var triangle = _figureFactory.CreateTriangle();
             _figureHistory.Add(triangle);
             figuresPanel.Children.Add(triangle.CreateUIElement());
         }
