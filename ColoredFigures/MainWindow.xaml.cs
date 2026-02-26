@@ -1,4 +1,5 @@
 ﻿using ColoredFigures.Models.CircleCreators;
+using ColoredFigures.Models.Shapes;
 using ColoredFigures.Models.SquareCreators;
 using ColoredFigures.Models.TriangleCreators;
 using System.Windows;
@@ -11,6 +12,7 @@ namespace ColoredFigures
         private ICircleCreator? _circleCreator;
         private ISquareCreator? _squareCreator;
         private ITriangleCreator? _triangleCreator;
+        private List<Figure> _figureHistory = new List<Figure>();
 
         public MainWindow()
         {
@@ -22,7 +24,7 @@ namespace ColoredFigures
         private void ColorComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateCreators();
-            figuresPanel.Children.Clear();
+            RedrawAllFiguresWithNewColor();
         }
 
         private void UpdateCreators()
@@ -57,24 +59,71 @@ namespace ColoredFigures
             }
         }
 
+        private void RedrawAllFiguresWithNewColor()
+        {
+            if (_circleCreator == null || _squareCreator == null || _triangleCreator == null)
+            {
+                figuresPanel.Children.Clear();
+                return;
+            }
+
+            figuresPanel.Children.Clear();
+
+            if (_figureHistory.Count == 0) return;
+
+            List<Figure> temp = new List<Figure>();
+
+            foreach (var oldFigure in _figureHistory)
+            {
+                Figure newFigure = null;
+
+                if (oldFigure is Circle)
+                {
+                    newFigure = _circleCreator.CreateCircle();
+                }
+                else if (oldFigure is Square)
+                {
+                    newFigure = _squareCreator.CreateSquare();
+                }
+                else if (oldFigure is Triangle)
+                {
+                    newFigure = _triangleCreator.CreateTriangle();
+                }
+
+                if (newFigure != null)
+                {
+                    temp.Add(newFigure);
+                    figuresPanel.Children.Add(newFigure.CreateUIElement());
+                }
+            }
+
+            _figureHistory = temp;
+        }
+
         private void AddCircleButton_Click(object sender, RoutedEventArgs e)
         {
             if (_circleCreator == null) return;
+
             var circle = _circleCreator.CreateCircle();
+            _figureHistory.Add(circle);
             figuresPanel.Children.Add(circle.CreateUIElement());
         }
 
         private void AddSquareButton_Click(object sender, RoutedEventArgs e)
         {
             if (_squareCreator == null) return;
+
             var square = _squareCreator.CreateSquare();
+            _figureHistory.Add(square);
             figuresPanel.Children.Add(square.CreateUIElement());
         }
 
         private void AddTriangleButton_Click(object sender, RoutedEventArgs e)
         {
             if (_triangleCreator == null) return;
+
             var triangle = _triangleCreator.CreateTriangle();
+            _figureHistory.Add(triangle);
             figuresPanel.Children.Add(triangle.CreateUIElement());
         }
     }

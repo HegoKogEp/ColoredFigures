@@ -9,8 +9,8 @@
 6. [MainWindow.xaml.cs](#mainwindowxamlcs)
 7. [Models/Circlecreators](#models-circlecreators)
    1. [BlueCircleCreator.cs](#bluecirclecreatorcs)
-   2. [CircleCreator.cs](#circlecreatorcs)
-   3. [GreenCircleCreator.cs](#greencirclecreatorcs)
+   2. [GreenCircleCreator.cs](#greencirclecreatorcs)
+   3. [ICircleCreator.cs](#icirclecreatorcs)
    4. [RedCircleCreator.cs](#redcirclecreatorcs)
 8. [Models/Shapes](#models-shapes)
    1. [Circle.cs](#circlecs)
@@ -20,13 +20,13 @@
 9. [Models/Squarecreators](#models-squarecreators)
    1. [BlueSquareCreator.cs](#bluesquarecreatorcs)
    2. [GreenSquareCreator.cs](#greensquarecreatorcs)
-   3. [RedSquareCreator.cs](#redsquarecreatorcs)
-   4. [SquareCreator.cs](#squarecreatorcs)
+   3. [ISquareCreator.cs](#isquarecreatorcs)
+   4. [RedSquareCreator.cs](#redsquarecreatorcs)
 10. [Models/Trianglecreators](#models-trianglecreators)
    1. [BlueTriangleCreator.cs](#bluetrianglecreatorcs)
    2. [GreenTriangleCreator.cs](#greentrianglecreatorcs)
-   3. [RedTriangleCreator.cs](#redtrianglecreatorcs)
-   4. [TriangleCreator.cs](#trianglecreatorcs)
+   3. [ITriangleCreator.cs](#itrianglecreatorcs)
+   4. [RedTriangleCreator.cs](#redtrianglecreatorcs)
 
 ## FILE 1: App.xaml
 
@@ -158,6 +158,7 @@ using System.Windows;
 
 ```csharp
 ﻿using ColoredFigures.Models.CircleCreators;
+using ColoredFigures.Models.Shapes;
 using ColoredFigures.Models.SquareCreators;
 using ColoredFigures.Models.TriangleCreators;
 using System.Windows;
@@ -167,9 +168,10 @@ namespace ColoredFigures
 {
     public partial class MainWindow : Window
     {
-        private CircleCreator? _circleCreator;
-        private SquareCreator? _squareCreator;
-        private TriangleCreator? _triangleCreator;
+        private ICircleCreator? _circleCreator;
+        private ISquareCreator? _squareCreator;
+        private ITriangleCreator? _triangleCreator;
+        private List<Figure> _figureHistory = new List<Figure>();
 
         public MainWindow()
         {
@@ -181,7 +183,7 @@ namespace ColoredFigures
         private void ColorComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateCreators();
-            figuresPanel.Children.Clear();
+            RedrawAllFiguresWithNewColor();
         }
 
         private void UpdateCreators()
@@ -216,24 +218,71 @@ namespace ColoredFigures
             }
         }
 
+        private void RedrawAllFiguresWithNewColor()
+        {
+            if (_circleCreator == null || _squareCreator == null || _triangleCreator == null)
+            {
+                figuresPanel.Children.Clear();
+                return;
+            }
+
+            figuresPanel.Children.Clear();
+
+            if (_figureHistory.Count == 0) return;
+
+            List<Figure> temp = new List<Figure>();
+
+            foreach (var oldFigure in _figureHistory)
+            {
+                Figure newFigure = null;
+
+                if (oldFigure is Circle)
+                {
+                    newFigure = _circleCreator.CreateCircle();
+                }
+                else if (oldFigure is Square)
+                {
+                    newFigure = _squareCreator.CreateSquare();
+                }
+                else if (oldFigure is Triangle)
+                {
+                    newFigure = _triangleCreator.CreateTriangle();
+                }
+
+                if (newFigure != null)
+                {
+                    temp.Add(newFigure);
+                    figuresPanel.Children.Add(newFigure.CreateUIElement());
+                }
+            }
+
+            _figureHistory = temp;
+        }
+
         private void AddCircleButton_Click(object sender, RoutedEventArgs e)
         {
             if (_circleCreator == null) return;
+
             var circle = _circleCreator.CreateCircle();
+            _figureHistory.Add(circle);
             figuresPanel.Children.Add(circle.CreateUIElement());
         }
 
         private void AddSquareButton_Click(object sender, RoutedEventArgs e)
         {
             if (_squareCreator == null) return;
+
             var square = _squareCreator.CreateSquare();
+            _figureHistory.Add(square);
             figuresPanel.Children.Add(square.CreateUIElement());
         }
 
         private void AddTriangleButton_Click(object sender, RoutedEventArgs e)
         {
             if (_triangleCreator == null) return;
+
             var triangle = _triangleCreator.CreateTriangle();
+            _figureHistory.Add(triangle);
             figuresPanel.Children.Add(triangle.CreateUIElement());
         }
     }
@@ -252,7 +301,7 @@ using System.Windows.Media;
 
 namespace ColoredFigures.Models.CircleCreators
 {
-    class BlueCircleCreator : CircleCreator
+    class BlueCircleCreator : ICircleCreator
     {
         public Circle CreateCircle()
         {
@@ -264,26 +313,7 @@ namespace ColoredFigures.Models.CircleCreators
 
 ---
 
-## FILE 8: CircleCreator.cs
-
-<a id='circlecreatorcs'></a>
-
-```csharp
-﻿
-using ColoredFigures.Models.Shapes;
-
-namespace ColoredFigures.Models.CircleCreators
-{
-    public interface CircleCreator
-    {
-        public Circle CreateCircle();
-    }
-}
-```
-
----
-
-## FILE 9: GreenCircleCreator.cs
+## FILE 8: GreenCircleCreator.cs
 
 <a id='greencirclecreatorcs'></a>
 
@@ -293,12 +323,31 @@ using System.Windows.Media;
 
 namespace ColoredFigures.Models.CircleCreators
 {
-    public class GreenCircleCreator : CircleCreator
+    public class GreenCircleCreator : ICircleCreator
     {
         public Circle CreateCircle()
         {
             return new Circle { Color = Colors.Green };
         }
+    }
+}
+```
+
+---
+
+## FILE 9: ICircleCreator.cs
+
+<a id='icirclecreatorcs'></a>
+
+```csharp
+﻿
+using ColoredFigures.Models.Shapes;
+
+namespace ColoredFigures.Models.CircleCreators
+{
+    public interface ICircleCreator
+    {
+        public Circle CreateCircle();
     }
 }
 ```
@@ -315,7 +364,7 @@ using System.Windows.Media;
 
 namespace ColoredFigures.Models.CircleCreators
 {
-    public class RedCircleCreator : CircleCreator
+    public class RedCircleCreator : ICircleCreator
     {
         public Circle CreateCircle()
         {
@@ -449,7 +498,7 @@ namespace ColoredFigures.Models.Shapes
 using System.Windows.Media;
 namespace ColoredFigures.Models.SquareCreators
 {
-    public class BlueSquareCreator : SquareCreator
+    public class BlueSquareCreator : ISquareCreator
     {
         public Square CreateSquare()
         {
@@ -470,7 +519,7 @@ namespace ColoredFigures.Models.SquareCreators
 using System.Windows.Media;
 namespace ColoredFigures.Models.SquareCreators
 {
-    public class GreenSquareCreator : SquareCreator
+    public class GreenSquareCreator : ISquareCreator
     {
         public Square CreateSquare()
         {
@@ -482,7 +531,25 @@ namespace ColoredFigures.Models.SquareCreators
 
 ---
 
-## FILE 17: RedSquareCreator.cs
+## FILE 17: ISquareCreator.cs
+
+<a id='isquarecreatorcs'></a>
+
+```csharp
+﻿using ColoredFigures.Models.Shapes;
+
+namespace ColoredFigures.Models.SquareCreators
+{
+    public interface ISquareCreator
+    {
+        public Square CreateSquare();
+    }
+}
+```
+
+---
+
+## FILE 18: RedSquareCreator.cs
 
 <a id='redsquarecreatorcs'></a>
 
@@ -492,30 +559,12 @@ using System.Windows.Media;
 
 namespace ColoredFigures.Models.SquareCreators
 {
-    public class RedSquareCreator : SquareCreator
+    public class RedSquareCreator : ISquareCreator
     {
         public Square CreateSquare()
         {
             return new Square { Color = Colors.Red };
         }
-    }
-}
-```
-
----
-
-## FILE 18: SquareCreator.cs
-
-<a id='squarecreatorcs'></a>
-
-```csharp
-﻿using ColoredFigures.Models.Shapes;
-
-namespace ColoredFigures.Models.SquareCreators
-{
-    public interface SquareCreator
-    {
-        public Square CreateSquare();
     }
 }
 ```
@@ -532,7 +581,7 @@ using System.Windows.Media;
 
 namespace ColoredFigures.Models.TriangleCreators
 {
-    class BlueTriangleCreator : TriangleCreator
+    class BlueTriangleCreator : ITriangleCreator
     {
         public Triangle CreateTriangle()
         {
@@ -554,7 +603,7 @@ using System.Windows.Media;
 
 namespace ColoredFigures.Models.TriangleCreators
 {
-    class GreenTriangleCreator : TriangleCreator
+    class GreenTriangleCreator : ITriangleCreator
     {
         public Triangle CreateTriangle()
         {
@@ -566,7 +615,25 @@ namespace ColoredFigures.Models.TriangleCreators
 
 ---
 
-## FILE 21: RedTriangleCreator.cs
+## FILE 21: ITriangleCreator.cs
+
+<a id='itrianglecreatorcs'></a>
+
+```csharp
+﻿using ColoredFigures.Models.Shapes;
+
+namespace ColoredFigures.Models.TriangleCreators
+{
+    public interface ITriangleCreator
+    {
+        public Triangle CreateTriangle();
+    }
+}
+```
+
+---
+
+## FILE 22: RedTriangleCreator.cs
 
 <a id='redtrianglecreatorcs'></a>
 
@@ -576,30 +643,12 @@ using System.Windows.Media;
 
 namespace ColoredFigures.Models.TriangleCreators
 {
-    class RedTriangleCreator : TriangleCreator
+    class RedTriangleCreator : ITriangleCreator
     {
         public Triangle CreateTriangle()
         {
             return new Triangle { Color = Colors.Red };
         }
-    }
-}
-```
-
----
-
-## FILE 22: TriangleCreator.cs
-
-<a id='trianglecreatorcs'></a>
-
-```csharp
-﻿using ColoredFigures.Models.Shapes;
-
-namespace ColoredFigures.Models.TriangleCreators
-{
-    public interface TriangleCreator
-    {
-        public Triangle CreateTriangle();
     }
 }
 ```
